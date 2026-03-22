@@ -1,0 +1,84 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - ./postgres-db:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+
+  airflow-init:
+    image: apache/airflow:2.7.1
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__WEBSERVER__SECRET_KEY=123456789000
+    command: version
+    entrypoint: >
+      bash -c "
+      airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Victor --lastname Jenckel --role Admin --email admin@example.com
+      "
+
+  airflow-webserver:
+    image: apache/airflow:2.7.1
+    depends_on:
+      - postgres
+      - redis
+      - airflow-init
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-ssh apache-airflow-providers-postgres
+      - AIRFLOW__WEBSERVER__SECRET_KEY=123456789000
+    volumes:
+      - ./dags:/opt/airflow/dags
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  airflow-scheduler:
+    image: apache/airflow:2.7.1
+    depends_on:
+      - airflow-webserver
+    volumes:
+      - ./dags:/opt/airflow/dags
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-ssh apache-airflow-providers-postgres
+      - AIRFLOW__WEBSERVER__SECRET_KEY=123456789000
+    command: scheduler  
+
+  airflow-worker:
+    image: apache/airflow:2.7.1
+    depends_on:
+      - airflow-scheduler
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./monit:/opt/airflow/dags/monit
+    environment:
+      - LOAD_EX=n
+      - EXECUTOR=CeleryExecutor
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__RESULT_BACKEND=db+postgresql://airflow:airflow@postgres/airflow
+      - AIRFLOW__CELERY__BROKER_URL=redis://:@redis:6379/0
+      - _PIP_ADDITIONAL_REQUIREMENTS=apache-airflow-providers-ssh apache-airflow-providers-postgres
+      - AIRFLOW__WEBSERVER__SECRET_KEY=123456789000
+    command: celery worker
