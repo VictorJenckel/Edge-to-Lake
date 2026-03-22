@@ -27,7 +27,7 @@ Sensores de vibração geram uma quantidade massiva de dados em alta frequência
 ## 🧠 Destaques da Arquitetura
 
 1. **Edge Analytics em Rust (Soft Real-Time):** Leitura via barramento I2C a 500Hz. O Rust foi escolhido pelo seu determinismo (sem Garbage Collector), garantindo que nenhum ciclo de máquina seja perdido. O algoritmo calcula o **RMS da vibração dinâmica**, isolando a gravidade estática.
-2. **Report by Exception:** O Edge Gateway só escreve no disco local quando o RMS ultrapassa o limite de anomalia (1.5g), poupando a vida útil da memória Flash do equipamento.
+2. **Report by Exception:** O Edge Gateway só escreve no disco local quando o RMS ultrapassa o limite de anomalia (0.35g), poupando a vida útil da memória Flash do equipamento.
 3. **Extração Inteligente (Byte Offset Watermarking):** O pipeline de dados no Apache Airflow **não** faz o download do log inteiro. Ele utiliza ponteiros de estado (Variáveis) para consultar o tamanho do arquivo via SFTP e extrai **apenas os bytes novos** gerados desde a última execução, reduzindo o tráfego de rede a quase zero.
 4. **Armazenamento Flexível (JSONB):** Ingestão bruta selada no PostgreSQL utilizando a tipagem `JSONB`, preparando o terreno para cruzamento de dados de produção (MES/ERP) e futuros modelos de Machine Learning sem engessar o schema.
 
