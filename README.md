@@ -46,6 +46,8 @@ Sensores de vibração geram uma quantidade massiva de dados em alta frequência
 4. **Seek & Read:** O Airflow compara o tamanho do arquivo remoto com o seu ponteiro interno. Se houve crescimento, ele executa um comando de *seek* e baixa apenas o delta (os dados novos).
 5. **Ingestão:** Os payloads JSON são parseados e inseridos no PostgreSQL. O ponteiro é atualizado.
 
+Desenvolvido por Victor Jenckel - Foco em integração OT/IT e Data Engineering Industrial.
+
 ## 📊 Extraindo Valor dos Dados
 
 A arquitetura baseada em JSONB permite extrair os dados analíticos de forma relacional usando funções nativas do PostgreSQL. Exemplo de query para análise de severidade:
@@ -64,4 +66,4 @@ ORDER BY
     id DESC;
 
 
-Desenvolvido por Victor Jenckel - Foco em integração OT/IT e Data Engineering Industrial.
+
